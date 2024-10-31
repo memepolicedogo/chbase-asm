@@ -66,6 +66,10 @@ firstArgItr:	; get to the options
 	jl	inFirst
 
 outFirst:
+	inc	rax
+	cmp	byte [rax], 0
+	je	printHelp
+	dec	rax
 	cmp	byte [rax], 122	; check if out of uppercase letter range
 	jg	errBadArgs
 	mov	r10, [rax]
