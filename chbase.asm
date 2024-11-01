@@ -89,7 +89,7 @@ inFirst:
 	cmp	byte [rax], 90
 	jg	errBadArgs
 	mov	r10, [rax]
-	mov	[output], r10
+	mov	[input], r10
 	inc	rax	; get next value
 	cmp	byte [rax], 122	; check if out of uppercase letter range
 	jg	errBadArgs
