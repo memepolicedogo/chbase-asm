@@ -41,7 +41,6 @@ _start:
 ; chbase -Db 1024
 ; 10000000000
 
-
 ;---ARGS---;
 	pop	rax	; get arg count off the stack
 	cmp	rax, 1	; check if only one arg is passed
@@ -220,35 +219,23 @@ convertUpper:
 
 
 intToStr:
-	; Starts from the least significant value of the string
-	; stores the numerical value of each place in each byte
-	; for later conversion to 'A-Z'/'0-9' as needed
-	; eg. 1234 -> ['0'...'1', '2','3','4']
-	; eg. A1234 -> ['0'...'10','1', '2','3','4']
-	mov	r8, rax ; store int for safe keeping
+	; improvement
+	; divide by base, store remainder, continue
+	
 	mov	r9b, [outputBase]; store the base we need to output
-	mov	r10, buffer+63	; last byte of the buffer
-intDecItr:
-	sub	r8, 1	; subtract one from the int
-	inc	byte [r10]	; increase the byte value
-	cmp	[r10], r9b	; check if we've hit the base cap
-	je shift	; shift place
-	cmp	r8, 0
-	jg	intDecItr
+	mov	r10, buffer+64	; last byte of the buffer
+loop:
+	dec	r10
+	div	r9
+	mov	[r10], dl
+	xor	rdx, rdx
+	cmp	rax, 0
+	jne	loop
 	jmp	print
-shift:
-	mov	r11, r10
-shiftItr:
-	mov	byte [r11], 0	; zero tha space
-	dec	r11	; next one
-	inc	byte [r11]	; up it
-	cmp	[r11], r9b	; too big?
-	je	shiftItr
-	cmp	r8, 0
-	jne	intDecItr
 
 
 print:
+	xor	r8, r8
 	xor	r11, r11
 printItr:
 	cmp	r11, 64
