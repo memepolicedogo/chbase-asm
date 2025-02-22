@@ -71,15 +71,15 @@ outFirst:
 	dec	rax
 	cmp	byte [rax], 122	; check if out of uppercase letter range
 	jg	errBadArgs
-	mov	r10, [rax]
-	mov	[output], r10	; store output type
+	mov	r10b, [rax]
+	mov	[output], r10b	; store output type
 	inc	rax	; get next value
 	cmp	byte [rax], 65	; check if in lowercase letter range
 	jl	errBadArgs
 	cmp	byte [rax], 90
 	jg	errBadArgs
-	mov	r10, [rax]
-	mov	[input], r10
+	mov	r10b, [rax]
+	mov	[input], r10b
 	jmp	convert
 
 inFirst:
@@ -87,15 +87,15 @@ inFirst:
 	jl	errBadArgs
 	cmp	byte [rax], 90
 	jg	errBadArgs
-	mov	r10, [rax]
-	mov	[input], r10
+	mov	r10b, [rax]
+	mov	[input], r10b
 	inc	rax	; get next value
 	cmp	byte [rax], 122	; check if out of uppercase letter range
 	jg	errBadArgs
 	cmp	byte [rax], 97
 	jl	errBadArgs
-	mov	r10, [rax]
-	mov	[output], r10	; store output type
+	mov	r10b, [rax]
+	mov	[output], r10b	; store output type
 	jmp	convert
 
 convert:	; choose which input to use
