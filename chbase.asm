@@ -9,7 +9,29 @@ section .data
 	badInputLen:	equ $-badInputTxt
 	tooLargeTxt:	db 'Input is larger than 64 bit max int',10
 	tooLargeLen:	equ $-tooLargeTxt
-	helpTxt:	db 'Usage: chbase [options...] input',10,'Converts a given number into a different number system',10,'Given number must be an unsigned integer under 2^64',10,10,'Options:',10,9,'-D',9,'decimal(base-10) input',10,9,'-d',9,'decimal(base-10) output',10,9,'-B',9,'binary(base-2) input',10,9,'-b',9,'binary(base-2) output',10,9,'-H',9,'hexadecimal(base-16) input',10,9,'-h',9,'hexadecimal(base-16) output',10,9,'-T',9,'trinary(base-3) input',10,9,'-t',9,'trinary(base 3) output',10,9,'-O',9,'octal(base-8) input',10,9,'-o',9,'octal(base-8) output',10,10,9,'-h',9,'display this help message and exit',10
+	badCustomTxt:	db 'Custom bases must be decimal integers between 2-36',10
+	badCustomLen:	equ $-badCustomTxt
+	helpTxt:
+		db 'Standard usage: chbase -<bases> input',10
+		db 'Custom usage: chbase <input_base> <output_base> input',10
+		db 'Converts a number into a different number system',10
+		db 'Given number must be an unsigned interger between 0-2^64',10
+		db 10
+		db 'Options:',10
+		db 9,'D',9,'Decimal input',10
+		db 9,'d',9,'Decimal output',10
+		db 9,'B',9,'Binary input',10
+		db 9,'b',9,'Binary output',10
+		db 9,'H',9,'Hexadecimal input',10
+		db 9,'h',9,'Hexadecimal output',10
+		db 9,'T',9,'Trinary input',10
+		db 9,'t',9,'Trinary output',10
+		db 9,'O',9,'Octal input',10
+		db 9,'o',9,'Octal output',10
+		db 10
+		db 9,'-h',9,'Display this help message and exit',10
+		db 'Custom bases must be decimal integers between 0-36',10
+		db 10
 	helpLen:	equ $-helpTxt
 	newline:	db 10
 section .bss
@@ -45,8 +67,10 @@ _start:
 	pop	rax	; get arg count off the stack
 	cmp	rax, 1	; check if only one arg is passed
 	je	errNoArgs	; if so, error
-	cmp	rax, 3	; check if more than three args are passed
-	jg	errExtraArgs	; if so, error
+	cmp	rax, 2
+	je	printHelp
+	cmp	rax, 3	; check if less than three args are passed
+	jl	errBadArgs	; if so, error
 	mov	[argc], rax	; store arg count for later
 	pop	rax		; get arg address off the stack
 	mov	[argv], rax	; store for later
@@ -55,7 +79,104 @@ firstArgItr:	; get to the options
 	cmp	byte [rax], 0		; check if it is null seperator
 	jne	firstArgItr	; if not, repeat
 
-	; parse options
+parseArgs:
+	cmp	qword [argc], 3	; Check if 3 args are passed
+	je	stdArgs		; Parse the standard way
+	cmp	qword [argc], 4	; Check if 4 args are passed
+	je	customArgs	; Parse with custom base
+	jne	errExtraArgs
+
+customArgs:
+	inc	rax	; pass the null seperator
+	; Check if the input is a valid int
+	cmp	byte [rax], 48
+	jl	errBadCustom
+	cmp	byte [rax], 57
+	jg	errBadCustom
+
+	mov	r10b, [rax]	; Get the first place
+	sub	r10b, 48	; Convert ascii to int
+	inc	rax		; Get the next char
+	mov	qword [inputBase], r10; Store our base as it stands
+	cmp	byte [rax], 0	; Check if input is one char
+	je	customOutput
+
+	; Check if next char is a valid number
+	cmp	byte [rax], 48
+	jl	errBadCustom
+	cmp	byte [rax], 57
+	jg	errBadCustom
+
+	mov	r11b, [rax]	; Get the second place
+	sub	r11b, 48	; Convert ascii to int
+	mov	[argv], rax	; Store our place in memory
+	mov	rax, r10	; Move 10s place to RAX for multiplication
+	mov	rbx, 10		; Store multiplier
+	mul	rbx		; Multiply rax by 10
+	add	rax, r11	; add 1s place to 10s place
+	; Clear our temp registers
+	xor	r10, r10
+	xor	r11, r11
+	; Check that the base is ok for printing
+	cmp	rax, 1
+	jl	errBadCustom
+	cmp	rax, 36
+	jg	errBadCustom
+	; Store base for conversion
+	mov	qword [inputBase], rax
+	mov	rax, [argv]
+	inc	rax
+
+customOutput:
+	inc	rax
+	; Check if the input is a valid int
+	cmp	byte [rax], 48
+	jl	errBadCustom
+	cmp	byte [rax], 57
+	jg	errBadCustom
+
+	mov	r10b, [rax]	; Get the first place
+	sub	r10b, 48	; Convert ascii to int
+	inc	rax		; Get the next char
+	mov	qword [outputBase], r10; Store out base as it stands
+	cmp	byte [rax], 0	; Check if input is one char
+	je	customEnd
+
+	; Check if next char is a valid number
+	cmp	byte [rax], 48
+	jl	errBadCustom
+	cmp	byte [rax], 57
+	jg	errBadCustom
+
+	mov	r11b, [rax]	; Get the second place
+	sub	r11b, 48	; Convert ascii to int
+	mov	[argv], rax	; Store our place in memory
+	mov	rax, r10	; Move 10s place to RAX for multiplication
+	mov	rbx, 10		; Store multiplier
+	mul	rbx		; Multiply rax by 10
+	add	rax, r11	; add 1s place to 10s place
+	; Clear our temp registers
+	xor	r10, r10
+	xor	r11, r11
+	; Check that the base is ok for printing
+	cmp	rax, 1
+	jl	errBadCustom
+	cmp	rax, 36
+	jg	errBadCustom
+	; Store base for conversion
+	mov	qword [outputBase], rax
+	mov	rax, [argv]	; Get back to our place
+	inc	rax
+	; Ensure that our output base is only 2 chars long
+	cmp	byte [rax], 0
+	jne	errBadCustom
+	jmp	customEnd	; Call the function and let it all work
+customEnd:
+	dec	rax
+	jmp	strToInt
+
+	
+stdArgs:	; parse standard options
 	inc	rax	; get to the first char of the options
 	cmp	byte [rax], 45	; check if it is a dash
 	jne	errBadArgs
@@ -321,6 +442,17 @@ errTooLarge:
 
 
 	jmp exit
+
+errBadCustom:
+	mov	rax, 1
+	mov	rdi, 1
+	mov	rsi, badCustomTxt
+	mov	rdx, badCustomLen
+	syscall
+
+	
+	jmp exit
+
 printHelp:
 	mov	rax, 1
 	mov	rdi, 1
