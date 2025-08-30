@@ -1,1 +1,1 @@
-Ensure NASM is installed, run ./build.sh to generate chbase executable, use ./chbase -h for help
+Ensure NASM is installed, use make to assemble, run chbase -h for help
