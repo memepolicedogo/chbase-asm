@@ -425,6 +425,11 @@ errBadArgs:
 
 	jmp exit
 errBadInput:
+	cmp	rbx, 16
+	jne	awql
+	cmp	byte [r8], 120
+	je	convertItr
+awql:	
 	mov	rax, 1
 	mov	rdi, 1
 	mov	rsi, badInputTxt
